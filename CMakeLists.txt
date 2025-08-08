@@ -1,12 +1,15 @@
-cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.31.6)
 project(VGServer)
-
+cmake_policy(SET CMP0167 OLD)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+# 告诉CMake spdlog配置文件在哪儿（根据你容器实际路径）
+#set(spdlog_DIR "/usr/lib/x86_64-linux-gnu/cmake/spdlog")
+#list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake-3.31/Modules")
 find_package(Catch2 REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(gflags REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(folly REQUIRED)
 
 add_executable(VGServer src/main.cpp
