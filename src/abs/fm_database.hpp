@@ -52,4 +52,4 @@ public:
 
 protected:
     FMDatabase() = default;
-};s
+};

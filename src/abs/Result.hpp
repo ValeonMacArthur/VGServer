@@ -5,9 +5,10 @@
 
 #include <string>
 #include <utility>
+#include <variant>
 
-    template<typename T, typename E = std::string>
-    class Result {
+template<typename T, typename E = std::string>
+class Result {
     public:
         using ValueType = T;
         using ErrorType = E;
