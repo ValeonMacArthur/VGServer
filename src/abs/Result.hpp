@@ -1,104 +1,92 @@
-//
-// Created by mike on 25-7-17.
-//
 #pragma once
-
 #include <string>
-#include <utility>
 #include <variant>
+#include <stdexcept>
+#include <utility>
 
 template<typename T, typename E = std::string>
 class Result {
-    public:
-        using ValueType = T;
-        using ErrorType = E;
+public:
+    using ValueType = T;
+    using ErrorType = E;
 
-        // Factory: Ok
-        static Result Ok(T value) {
-            return Result(std::move(value));
-        }
+    // 工厂方法
+    static Result Ok(T value) {
+        return Result(State::Ok, std::move(value), E{});
+    }
 
-        // Factory: Error
-        static Result Err(E error) {
-            return Result(std::move(error));
-        }
+    static Result Err(E error) {
+        return Result(State::Err, T{}, std::move(error));
+    }
 
-        // State checks
-        [[nodiscard]] bool isOk() const noexcept {
-            return std::holds_alternative<T>(data_);
-        }
+    // 状态检查
+    [[nodiscard]] bool isOk() const noexcept { return state_ == State::Ok; }
+    [[nodiscard]] bool isErr() const noexcept { return state_ == State::Err; }
 
-        [[nodiscard]] bool isErr() const noexcept {
-            return std::holds_alternative<E>(data_);
-        }
+    // 访问 value
+    T& value() {
+        if (isErr()) throw std::logic_error("Tried to access value of an error Result");
+        return *value_;
+    }
+    const T& value() const {
+        if (isErr()) throw std::logic_error("Tried to access value of an error Result");
+        return *value_;
+    }
 
-        // Access value
-        const T& value() const {
-            if (isErr()) throw std::logic_error("Tried to access value of an error Result");
-            return std::get<T>(data_);
-        }
+    // 访问 error
+    E& error() {
+        if (isOk()) throw std::logic_error("Tried to access error of an ok Result");
+        return *error_;
+    }
+    const E& error() const {
+        if (isOk()) throw std::logic_error("Tried to access error of an ok Result");
+        return *error_;
+    }
 
-        T& value() {
-            if (isErr()) throw std::logic_error("Tried to access value of an error Result");
-            return std::get<T>(data_);
-        }
+private:
+    enum class State { Ok, Err };
 
-        // Access error
-        const E& error() const {
-            if (isOk()) throw std::logic_error("Tried to access error of an ok Result");
-            return std::get<E>(data_);
-        }
+    State state_;
+    std::optional<T> value_;
+    std::optional<E> error_;
 
-        E& error() {
-            if (isOk()) throw std::logic_error("Tried to access error of an ok Result");
-            return std::get<E>(data_);
-        }
+    Result(State state, T value, E error)
+        : state_(state) {
+        if (state == State::Ok) value_.emplace(std::move(value));
+        else error_.emplace(std::move(error));
+    }
+};
 
-    private:
-        std::variant<T, E> data_;
+// ----------------------------------
+// void 特化版本
+// ----------------------------------
+template<typename E>
+class Result<void, E> {
+public:
+    using ValueType = void;
+    using ErrorType = E;
 
-        explicit Result(T value) : data_(std::move(value)) {}
-        explicit Result(E error) : data_(std::move(error)) {}
-    };
+    static Result Ok() {
+        return Result(State::Ok, E{});
+    }
 
+    static Result Err(E error) {
+        return Result(State::Err, std::move(error));
+    }
 
-    // -------------------------
-    // Specialization: Result<void, E>
-    // -------------------------
-    template<typename E>
-    class Result<void, E> {
-    public:
-        using ValueType = void;
-        using ErrorType = E;
+    [[nodiscard]] bool isOk() const noexcept { return state_ == State::Ok; }
+    [[nodiscard]] bool isErr() const noexcept { return state_ == State::Err; }
 
-        static Result Ok() {
-            return Result(true, E{});
-        }
+    const E& error() const {
+        if (isOk()) throw std::logic_error("Tried to access error of an ok Result<void>");
+        return error_;
+    }
 
-        static Result Err(E error) {
-            return Result(false, std::move(error));
-        }
+private:
+    enum class State { Ok, Err };
 
-        [[nodiscard]] bool isOk() const noexcept {
-            return ok_;
-        }
+    State state_;
+    E error_;
 
-        [[nodiscard]] bool isErr() const noexcept {
-            return !ok_;
-        }
-
-        const E& error() const {
-            if (ok_) throw std::logic_error("Tried to access error of an ok Result<void>");
-            return error_;
-        }
-
-        E& error() {
-            if (ok_) throw std::logic_error("Tried to access error of an ok Result<void>");
-            return error_;
-        }
-
-    private:
-        bool ok_;
-        E error_;
-        Result( bool ok, E error) : ok_(ok), error_(std::move(error)) {}
-    };
+    Result(State state, E error) : state_(state), error_(std::move(error)) {}
+};

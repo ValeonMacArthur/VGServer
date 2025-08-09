@@ -3,9 +3,11 @@ project(VGServer)
 cmake_policy(SET CMP0167 OLD)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# 告诉CMake spdlog配置文件在哪儿（根据你容器实际路径）
-#set(spdlog_DIR "/usr/lib/x86_64-linux-gnu/cmake/spdlog")
-#list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake-3.31/Modules")
+
+find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(Threads REQUIRED)
+
 find_package(Catch2 REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(gflags REQUIRED)
@@ -17,30 +19,33 @@ add_executable(VGServer src/main.cpp
         src/abs/fm_database.hpp
         src/abs/fm_resultset.hpp
         src/utils/log.hpp
+        src/jwt-cpp/jwt.h
         src/controller/router.hpp
         src/controller/controller.hpp
         src/controller/hello_controller.cpp
         src/controller/chat_ws_controller.cpp
         src/controller/chat_ws_controller.hpp
         src/controller/login_controller.cpp
+        src/controller/google_auth.cpp
 )
 
 target_include_directories(VGServer PRIVATE
         /usr/local/include/uWebSockets
         /usr/local/include/uSockets
+        /usr/local/include
+
 )
 
 # 链接 uSockets 静态库
 target_link_libraries(VGServer PRIVATE
         spdlog::spdlog
         /usr/local/lib/uSockets.a
-        -lz                 # zlib
-        -lssl               # OpenSSL
-        -lcrypto            # OpenSSL
-        -lpthread
+        ZLIB::ZLIB
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        Threads::Threads
         gflags
         Folly::folly
-
 )
 
 # 编译测试程序
@@ -49,11 +54,20 @@ add_executable(vg_tests
         src/vg_tests/test_fm.cpp
         src/vg_tests/MockFMResultSet.h
         src/model/model.hpp
+        src/jwt-cpp/jwt.h
+        src/vg_tests/test_jwt.cpp
+        src/jwt-cpp/jwt_auth.hpp
         # 你可以加更多测试文件
 )
-
+target_include_directories(vg_tests PRIVATE
+        /usr/local/include
+)
 # 测试程序链接 Catch2 的带 main 版本
-target_link_libraries(vg_tests PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(vg_tests PRIVATE
+        Catch2::Catch2WithMain
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        )
 enable_testing()
 include(CTest)
 include(Catch)
