@@ -27,11 +27,14 @@ add_executable(VGServer src/main.cpp
         src/controller/chat_ws_controller.hpp
         src/controller/login_controller.cpp
         src/controller/google_auth.cpp
+        src/database/db_pool.cpp
+        src/database/db_pool.hpp
 )
 
 target_include_directories(VGServer PRIVATE
         /usr/local/include/uWebSockets
         /usr/local/include/uSockets
+        /usr/local/include/zdb
         /usr/local/include
 
 )
@@ -46,6 +49,7 @@ target_link_libraries(VGServer PRIVATE
         Threads::Threads
         gflags
         Folly::folly
+        -lzdb
 )
 
 # 编译测试程序
@@ -53,20 +57,24 @@ add_executable(vg_tests
         src/vg_tests/test_result.cpp
         src/vg_tests/test_fm.cpp
         src/vg_tests/MockFMResultSet.h
-        src/model/model.hpp
         src/jwt-cpp/jwt.h
         src/vg_tests/test_jwt.cpp
         src/jwt-cpp/jwt_auth.hpp
+        src/database/db_pool.cpp
+        src/database/db_pool.hpp
+        src/vg_tests/test_dbpoll.cpp
         # 你可以加更多测试文件
 )
 target_include_directories(vg_tests PRIVATE
         /usr/local/include
+        /usr/local/include/zdb
 )
 # 测试程序链接 Catch2 的带 main 版本
 target_link_libraries(vg_tests PRIVATE
         Catch2::Catch2WithMain
         OpenSSL::SSL
         OpenSSL::Crypto
+        -lzdb
         )
 enable_testing()
 include(CTest)
