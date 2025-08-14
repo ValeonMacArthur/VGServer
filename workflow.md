@@ -13,6 +13,7 @@
     ```bash
     git checkout main
     git pull origin main
+    git fetch --prune
     git checkout -b feature/your-feature-name
     ```
 

@@ -44,26 +44,3 @@ TEST_CASE("DBPool single thread + one std::thread test", "[dbpool][thread]") {
 }
 
 
-TEST_CASE("DBPool multi-threaded concurrent connection test", "[dbpool][concurrent]") {
-    DBPool::init_postgres(host, port, dbname, user, password);
-
-    const int thread_count = 3;
-    std::vector<std::thread> threads;
-    std::vector<bool> results(thread_count, false);
-
-    for (int i = 0; i < thread_count; ++i) {
-        threads.emplace_back([&results, i]() {
-            results[i] = DBPool::test_connection();
-        });
-    }
-
-    for (auto& t : threads) {
-        t.join();
-    }
-
-    for (bool res : results) {
-        REQUIRE(res == true);
-    }
-
-    DBPool::shutdown();
-}

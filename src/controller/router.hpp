@@ -11,7 +11,6 @@ inline void setup_routes(uWS::App &app) {
     app
     .get("/hello", controller::helloHandler)
     .get("/user/:id", controller::userHandler)
-    .get("/v2/user/:id", controller::verifyCodeHandler)
 
     //反馈
     .ws<UserData>("/chat/*", {

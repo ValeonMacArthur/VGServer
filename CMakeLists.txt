@@ -7,12 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenSSL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
-
 find_package(Catch2 REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(gflags REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
-find_package(folly REQUIRED)
+
+
 
 add_executable(VGServer src/main.cpp
         src/abs/Result.hpp
@@ -25,17 +24,18 @@ add_executable(VGServer src/main.cpp
         src/controller/hello_controller.cpp
         src/controller/chat_ws_controller.cpp
         src/controller/chat_ws_controller.hpp
-        src/controller/login_controller.cpp
         src/controller/google_auth.cpp
         src/database/db_pool.cpp
         src/database/db_pool.hpp
+        src/gin/UWSWrapper.hpp
+        src/gin/async_io_tool.hpp
 )
 
 target_include_directories(VGServer PRIVATE
+        /usr/local/include
         /usr/local/include/uWebSockets
         /usr/local/include/uSockets
         /usr/local/include/zdb
-        /usr/local/include
 
 )
 
@@ -47,9 +47,8 @@ target_link_libraries(VGServer PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         Threads::Threads
-        gflags
-        Folly::folly
         -lzdb
+
 )
 
 # 编译测试程序
@@ -63,6 +62,8 @@ add_executable(vg_tests
         src/database/db_pool.cpp
         src/database/db_pool.hpp
         src/vg_tests/test_dbpoll.cpp
+        src/vg_tests/concurrentqueue.cpp
+        src/gin/async_io_tool.hpp
         # 你可以加更多测试文件
 )
 target_include_directories(vg_tests PRIVATE

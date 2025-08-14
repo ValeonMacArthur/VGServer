@@ -2,61 +2,62 @@
 // Created by III on 2025/7/27.
 //
 
-#include <uWebSockets/App.h>
 #include <iostream>
-#include "controller/router.hpp"
 #include <spdlog/spdlog.h>
 #include "utils/log.hpp"
-#include <atomic>
-#include <folly/executors/CPUThreadPoolExecutor.h>
-#include <folly/futures/Future.h>
-#include <folly/init/Init.h>
-#include <thread>
+#include "gin/UWSWrapper.hpp"
+#include "database/db_pool.hpp"
+#include <csignal>
+static constexpr auto host = "host.docker.internal";
+static constexpr int port = 5432;
+static constexpr auto dbname = "mydatabase";
+static constexpr auto user = "postgres";
+static constexpr auto password = "Rg9vTzXr82bqLpNfU3nF";
+static constexpr auto initial_conns = 10;
+static constexpr auto max_conns = 20;
 
-std::atomic<bool> running = true;
-void signal_handler(int signal) {
-    spdlog::info("Signal {} received, shutting down...", signal);
-    running = false;
+void signal_handler(int) {
+    std::cout << "app shutdown"  << std::endl;
 }
 
-std::shared_ptr<folly::CPUThreadPoolExecutor> threadPool;
+// 可以定义在 main 外面
+void helloHandler(uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
+    res->end("Hello, world from outside main!");
+}
+
+// 其他 handler 也可以类似定义
+void goodbyeHandler(uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
+    res->end("Goodbye!");
+}
 
 
 int main(int argc, char** argv)  {
-    folly::Init init(&argc, &argv);
-
-    unsigned int total_cpus = std::thread::hardware_concurrency();
-    if (total_cpus == 0) {
-        total_cpus = 1; // fallback
-    }
-    // 预留 1 个给 uWebSockets 主线程
-    // 预留 1 个给 spdlog
-    // 预留 1 个给 libzdb
-    unsigned int reserve_cpus = 3;
-    unsigned int pool_threads = (total_cpus > reserve_cpus) ? total_cpus - reserve_cpus : 1;
-
-    auto executor = std::make_shared<folly::CPUThreadPoolExecutor>(
-        pool_threads,
-        std::make_shared<folly::NamedThreadFactory>("http-worker")
-    );
-
-
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
     init_logger(LogMode::Dev);
 
-    uWS::App app;
-    setup_routes(app);
-    app.listen(8080, [](auto *listen_socket) {
-        if (listen_socket) {
-            std::cout << "[OK] HTTP server listening on port 8080\n";
-        } else {
-            std::cerr << "[ERROR] Failed to start HTTP server\n";
-        }
-    }).run();
-    // 等待退出信号
-    while (running) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    // 关闭日志系统
+    std::string loop_type;
+#if defined(LIBUS_USE_LIBUV)
+    loop_type = "libuv";
+#elif defined(LIBUS_USE_EPOLL)
+    loop_type = "epoll";
+#elif defined(LIBUS_USE_KQUEUE)
+    loop_type = "kqueue";
+#elif defined(LIBUS_USE_ASIO)
+    loop_type = "ASIO";
+#elif defined(LIBUS_USE_GCD)
+    loop_type = "GCD";
+#else
+    loop_type = "未知（可能自定义或默认未定义）";
+#endif
+spdlog::info("当前项目 uWebSockets 底层使用的事件循环类型: {}",  loop_type);
+
+    UWSWrapper server;
+    server.addRoute("GET", "/hello", helloHandler);
+    server.listen(8080);
+    server.run();
+
+
     spdlog::shutdown();
     return 0;
 
