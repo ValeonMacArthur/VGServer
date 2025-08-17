@@ -48,13 +48,13 @@ RUN git clone https://github.com/fastfloat/fast_float.git && \
     cd ../.. && rm -rf fast_float
 
 # 安装 Facebook Folly
-RUN git clone --recurse-submodules https://github.com/facebook/folly.git && \
-    cd folly && \
-    git checkout v2025.07.21.00 && \
-    mkdir _build && cd _build && \
-    cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/local && \
-    make && make install && \
-    cd ../.. && rm -rf folly
+# RUN git clone --recurse-submodules https://github.com/facebook/folly.git && \
+#     cd folly && \
+#     git checkout v2025.07.21.00 && \
+#     mkdir _build && cd _build && \
+#     cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=/usr/local && \
+#     make && make install && \
+#     cd ../.. && rm -rf folly
 
 # 安装 hiredis
 RUN git clone https://github.com/redis/hiredis.git && \
@@ -91,7 +91,14 @@ RUN git clone --branch release-3-4-1 https://bitbucket.org/tildeslash/libzdb.git
     ./configure && \
     make && \
     make install && \
-    cd .. 
+    cd .. && rm -rf libzdb
+
+RUN git clone https://github.com/Thalhammer/jwt-cpp.git && \
+    cd jwt-cpp && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make install && \
+    cd .. && rm -rf jwt-cpp
 
 # 更新链接库缓存
 RUN ldconfig

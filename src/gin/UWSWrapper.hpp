@@ -7,10 +7,9 @@
 #include <uWebSockets/App.h>
 #include <functional>
 #include <string>
-#include <algorithm>
 #include <iostream>
-#include <boost/asio.hpp>
-#include <thread>
+
+
 
 // 默认空用户数据（类似Java接口的默认实现）
 struct EmptySocketData {};
@@ -26,7 +25,7 @@ public:
     UWSWrapper& addRoute(std::string method, std::string_view path,
                      std::function<void(uWS::HttpResponse<false>*, uWS::HttpRequest*)> handler)
      {
-        std::ranges::transform(method, method.begin(), ::toupper);;
+        std::ranges::transform(method, method.begin(), [](unsigned char c){ return std::toupper(c); });
         if (method == "GET") {
             app.get(std::string(path), std::move(handler));
         } else if (method == "POST") {

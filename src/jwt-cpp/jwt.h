@@ -97,5 +97,6 @@ namespace jwt {
         return json::parse(payload_json);
     }
 
+    json decode(const std::string & token);
 } // namespace jwt
 

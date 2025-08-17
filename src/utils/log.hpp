@@ -70,7 +70,7 @@ inline void init_logger(LogMode mode) {
     // 设置格式
     if (mode == LogMode::Dev) {
         // 彩色终端文本格式
-        spdlog::set_pattern("%^[%Y%m%d%.H%M%S.%e] [%l] %v%$");
+        spdlog::set_pattern("%^[%Y%m%d.%H-%M-%S.%e] [%l] %v%$");
         spdlog::set_level(spdlog::level::debug);
     } else {
         // JSON 格式（需保证 unix_ms_formatter 已定义）

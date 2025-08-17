@@ -11,6 +11,16 @@ extern "C" {
 #include <zdb/zdb.h>
 }
 
+static constexpr auto host = "host.docker.internal";
+static constexpr int port = 5432;
+static constexpr auto dbname = "mydatabase";
+static constexpr auto user = "postgres";
+static constexpr auto password = "Rg9vTzXr82bqLpNfU3nF";
+static constexpr auto initial_conns = 10;
+static constexpr auto max_conns = 20;
+
+
+
 class DBPool {
 public:
     // 初始化 PostgreSQL 连接池
