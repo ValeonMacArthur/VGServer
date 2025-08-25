@@ -1,0 +1,124 @@
+apiVersion: config.istio.io/v1alpha2
+kind: QuotaSpec
+metadata:
+  name: vgserver-rate-limit
+spec:
+  rules:
+  - quotas:
+    - charge: 1
+      quota: requestcount
+---
+apiVersion: config.istio.io/v1alpha2
+kind: QuotaSpecBinding
+metadata:
+  name: vgserver-rate-limit-binding
+spec:
+  quotaSpecs:
+  - name: vgserver-rate-limit
+    namespace: default
+  services:
+  - name: vgserver-svc
+
+# ---------------------------
+# Gateway: 定义入口流量
+# ---------------------------
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: vgserver-gateway
+  namespace: default
+spec:
+  selector:
+    istio: ingressgateway   # 使用 Istio 提供的入口网关
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "vgserver.example.com"   # 对外域名（自行替换）
+    maxRequestBytes: 1048576
+
+---
+# ---------------------------
+# VirtualService: 路由规则
+# ---------------------------
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: vgserver-vs
+spec:
+  hosts:
+  - "*"   # 外部访问域名，先用 *，生产可以改成 api.example.com
+  gateways:
+  - vgserver-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api
+    route:
+    - destination:
+        host: vgserver-svc.default.svc.cluster.local
+        port:
+          number: 8080
+    timeout: 15s
+    corsPolicy:
+      allowOrigins:
+      - exact: "https://example.com"
+      - exact: "https://another-frontend.com"
+      allowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      allowHeaders:
+      - Authorization
+      - Content-Type
+      - X-Requested-With
+      allowCredentials: true
+      maxAge: "24h"
+
+---
+# ---------------------------
+# DestinationRule: 定义目标服务策略
+# ---------------------------
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: vgserver-dr
+spec:
+  host: vgserver-svc
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50  # 回压
+        maxRequestsPerConnection: 20
+    outlierDetection:              # 熔断
+      consecutive5xxErrors: 5
+      interval: 5s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+
+---
+# ---------------------------
+# AuthorizationPolicy: 访问控制
+# ---------------------------
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: vgserver-authz
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: vgserver
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        namespaces: ["default"]   # 只允许 default namespace 内部调用
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
