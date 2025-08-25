@@ -1,0 +1,114 @@
+# ===========================
+# 1️⃣ Service - VGServer
+# ===========================
+apiVersion: v1
+kind: Service
+metadata:
+  name: vgserver-svc
+  namespace: default
+spec:
+  selector:
+    app: vgserver
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+
+---
+# ===========================
+# 2️⃣ Deployment - VGServer + Sidecar
+# ===========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vgserver-deploy
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vgserver
+  template:
+    metadata:
+      labels:
+        app: vgserver
+      annotations:
+        sidecar.istio.io/inject: "true"  # 自动注入 Envoy Sidecar
+    spec:
+      containers:
+        - name: vgserver
+          image: myregistry/vgserver:latest
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+---
+# ===========================
+# 3️⃣ Istio Gateway
+# ===========================
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: vgserver-gateway
+  namespace: default
+spec:
+  selector:
+    istio: ingressgateway  # 使用 Istio 默认 Ingress Gateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: tls-secret # Kubernetes TLS Secret
+      hosts:
+        - "vgserver.example.com"
+
+---
+# ===========================
+# 4️⃣ Istio VirtualService
+# ===========================
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: vgserver-vs
+  namespace: default
+spec:
+  hosts:
+    - "vgserver.example.com"
+  gateways:
+    - vgserver-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: vgserver-svc.default.svc.cluster.local
+            port:
+              number: 8080
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: gateway-error,connect-failure,refused-stream
+      timeout: 10s
