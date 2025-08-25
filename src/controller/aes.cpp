@@ -41,11 +41,15 @@ void aesHandler(uWS::HttpResponse<false>* res, uWS::HttpRequest* req) {
         auto loop = uWS::Loop::get();
         // 读取请求 body
         auto body = std::make_shared<std::string>();
+
+
+
         res->onData([safeRes, body, aborted, loop](std::string_view chunk, bool isLast) {
             body->append(chunk);
             if (!isLast) return;
 
             auto input = std::make_shared<std::string>(*body);
+            //限制最大长度envoy max_request_bytes 此处省略
 
             // ① 提交到线程池处理
             const auto& pool = controller::getThreadPool();

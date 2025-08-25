@@ -18,7 +18,6 @@ add_executable(VGServer src/main.cpp
         src/abs/fm_database.hpp
         src/abs/fm_resultset.hpp
         src/utils/log.hpp
-        src/jwt-cpp/jwt.h
         src/database/db_pool.cpp
         src/database/db_pool.hpp
         src/gin/UWSWrapper.hpp
@@ -28,6 +27,9 @@ add_executable(VGServer src/main.cpp
         src/crypto/CryptoUtils.hpp
         src/controller/aes.cpp
         src/controller/aes.hpp
+        src/controller/jwt_token.cpp
+        src/controller/jwt_token.hpp
+        src/gin/uWSGuard.hpp
 )
 
 target_include_directories(VGServer PRIVATE
@@ -55,15 +57,14 @@ add_executable(vg_tests
         src/vg_tests/test_result.cpp
         src/vg_tests/test_fm.cpp
         src/vg_tests/MockFMResultSet.h
-        src/jwt-cpp/jwt.h
-        src/vg_tests/test_jwt.cpp
-        src/jwt-cpp/jwt_auth.hpp
         src/database/db_pool.cpp
         src/database/db_pool.hpp
-        src/vg_tests/test_dbpoll.cpp
         src/vg_tests/concurrentqueue.cpp
         src/crypto/CryptoUtils.hpp
         src/vg_tests/test_crypto.cpp
+        src/controller/jwt_token.cpp
+        src/controller/jwt_token.hpp
+        src/vg_tests/test_jwt.cpp
         # 你可以加更多测试文件
 )
 target_include_directories(vg_tests PRIVATE

@@ -6,7 +6,6 @@
 #define PUB_HPP
 #include <uWebSockets/App.h>
 #include <nlohmann/json.hpp>
-#include <boost/pool/object_pool.hpp>
 #include <boost/asio.hpp>
 
 namespace controller {
